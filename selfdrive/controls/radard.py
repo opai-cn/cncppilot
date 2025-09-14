@@ -57,7 +57,7 @@ class Track:
       self.cnt = 0
 
     if ready:
-      self.dPath = self.yRel + np.interp(self.dRel, md.position.x, md.position.y)
+      self.dPath, self.in_lane_prob = self.d_path(md, self.dRel, self.yRel) #self.yRel + np.interp(self.dRel, md.position.x, md.position.y)
 
     a_lead_threshold = 0.5 * radar_reaction_factor
     if abs(self.aLead) < a_lead_threshold and abs(self.jLead) < 0.5:
@@ -66,6 +66,20 @@ class Track:
       self.aLeadTau.update(0.0)
 
     self.cnt += 1
+
+  def d_path(self, md, dRel, yRel):
+    lane_xs = md.laneLines[1].x
+    left_ys = md.laneLines[1].y
+    right_ys = md.laneLines[2].y
+    left_lane_y = np.interp(dRel, lane_xs, left_ys)
+    right_lane_y = np.interp(dRel, lane_xs, right_ys)
+    center_y = (left_lane_y + right_lane_y) / 2.0
+    lane_half_width = abs(right_lane_y - left_lane_y) / 2.0
+    dist_from_center = yRel + center_y
+    in_lane_prob = max(0.0, 1.0 - (abs(dist_from_center) / lane_half_width))
+
+    return  dist_from_center, in_lane_prob
+    
 
   def get_RadarState(self, model_prob: float = 0.0, vision_y_rel = 0.0):
     return {
@@ -489,10 +503,10 @@ class RadarD:
       self.radar_state.leadRight = {'status': False}
       return
 
-    #md_x, md_y = md.position.x, md.position.y
-    lane_xs = md.laneLines[1].x
+    #lane_xs = md.laneLines[1].x
     left_ys = md.laneLines[1].y
     right_ys = md.laneLines[2].y
+    lane_width = abs(right_ys[5] - left_ys[5])
     
     left_list, right_list, center_list, cutin_list = [], [], [], []
 
@@ -500,22 +514,24 @@ class RadarD:
       #dy = c.yRel + np.interp(c.dRel, md_x, md_y) # + c.yvLead * self.radar_lat_factor
       #dy_with_vel = dy + c.yvLead * self.radar_lat_factor
       y_with_vel_neg = -(c.yRel + c.yvLead * self.radar_lat_factor)
-      offset = np.interp(c.dRel, [10, 50], [0.0, 0.3])
-      left_lane_y = np.interp(c.dRel, lane_xs, left_ys) + offset
-      right_lane_y = np.interp(c.dRel, lane_xs, right_ys) - offset
+      #offset = np.interp(c.dRel, [10, 50], [0.0, 0.3])
+      tol = np.interp(c.dRel, [10, 50], [1.0, 0.7])
+      #left_lane_y = np.interp(c.dRel, lane_xs, left_ys) + offset
+      #right_lane_y = np.interp(c.dRel, lane_xs, right_ys) - offset
 
       y_rel_neg = - c.yRel
+      lane_width_tol = lane_width * tol
       # center
-      if left_lane_y < y_rel_neg < right_lane_y:
+      if abs(c.dPath) <= lane_width_tol: #left_lane_y < y_rel_neg < right_lane_y:
         if c.cnt > 3:
           ld = c.get_RadarState(lead_msg.prob, float(-lead_msg.y[0]))
           ld['modelProb'] = 0.01
           center_list.append(ld)
 
       # left/right
-      elif y_rel_neg < left_lane_y:
+      elif y_rel_neg < - lane_width * tol: #left_lane_y:
         ld = c.get_RadarState(0, 0)
-        if self.lane_line_available and y_with_vel_neg > left_lane_y and c.cnt > int(2.0/DT_MDL):
+        if self.lane_line_available and y_with_vel_neg > - lane_width_tol and c.cnt > int(2.0/DT_MDL):
           if c.cut_in_count > int(0.2/DT_MDL):
             ld['modelProb'] = 0.03
             cutin_list.append(ld)
@@ -523,7 +539,7 @@ class RadarD:
         left_list.append(ld)
       else:
         ld = c.get_RadarState(0, 0)
-        if self.lane_line_available and y_with_vel_neg < right_lane_y and c.cnt > int(2.0/DT_MDL):
+        if self.lane_line_available and y_with_vel_neg < lane_width_tol and c.cnt > int(2.0/DT_MDL):
           if c.cut_in_count > int(0.2/DT_MDL):
             ld['modelProb'] = 0.03
             cutin_list.append(ld)
