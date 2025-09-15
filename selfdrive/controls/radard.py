@@ -75,16 +75,16 @@ class Track:
     lane_xs = md.laneLines[1].x
     left_ys = md.laneLines[1].y
     right_ys = md.laneLines[2].y
-    def d_path_interp(dRel):
+    def d_path_interp(dRel, yRel):
       left_lane_y = np.interp(dRel, lane_xs, left_ys)
       right_lane_y = np.interp(dRel, lane_xs, right_ys)
       center_y = (left_lane_y + right_lane_y) / 2.0
       lane_half_width = abs(right_lane_y - left_lane_y) / 2.0
-      dist_from_center = self.yRel + center_y
+      dist_from_center = yRel + center_y
       in_lane_prob = max(0.0, 1.0 - (abs(dist_from_center) / lane_half_width))
       return dist_from_center, in_lane_prob
-    self.dPath, self.in_lane_prob = d_path_interp(self.dRel)
-    self.dPath_future, self.in_lane_prob_future = d_path_interp(self.dRel_future)
+    self.dPath, self.in_lane_prob = d_path_interp(self.dRel, self.yRel)
+    self.dPath_future, self.in_lane_prob_future = d_path_interp(self.dRel_future, self.yRel_future)
 
   def get_RadarState(self, model_prob: float = 0.0, vision_y_rel = 0.0):
     return {
