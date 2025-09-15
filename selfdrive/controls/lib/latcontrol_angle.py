@@ -13,8 +13,8 @@ class LatControlAngle(LatControl):
     self.sat_check_min_speed = 5.
     self.angle_steers_des = 0.0
     print(CP.carFingerprint, "using LatControlAngle")
-    #self.factor = 0.5 if CP.carFingerprint in ["HYUNDAI_IONIQ_5_PE"] else 1.0
-    self.factor = 0.5
+    self.factor = 0.5 if CP.carFingerprint in ["HYUNDAI_IONIQ_5_PE"] else 1.0
+    #self.factor = 0.5
     print("Angle factor", self.factor)
 
   def update(self, active, CS, VM, params, steer_limited_by_controls, desired_curvature, llk, curvature_limited, model_data=None):  
