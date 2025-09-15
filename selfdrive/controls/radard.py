@@ -605,7 +605,7 @@ class RadarD:
     chosen = None
     detected = self.radar_detected
 
-    if False and self.leadCutIn and self.leadCutIn.get("status") and self.detect_cut_in:
+    if self.leadCutIn and self.leadCutIn.get("status") and self.detect_cut_in:
       if self.radar_state.leadOne.status:
         if self.leadCutIn["dRel"] < self.radar_state.leadOne.dRel:
           chosen = self.leadCutIn
