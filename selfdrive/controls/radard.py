@@ -562,13 +562,13 @@ class RadarD:
     self.leadTwo = None
     if self.lane_line_available:
       self.leadCenter = min(
-          (ld for ld in center_list if ld['vLead'] > 5 and ld['radar'] and abs(ld['dPath']) < 1.2 and ld['dRel'] > 3.5),
+          (ld for ld in center_list if ld['vLead'] > 5 and ld['radar'] and ld['dRel'] > 3.5),
           key=lambda d: d['dRel'],
           default=None
       )
       if self.radar_state.leadOne.status and self.radar_state.leadOne.radar:
         self.leadTwo = min(
-            (ld for ld in center_list if ld['vLead'] > 5 and ld['radar'] and abs(ld['dPath']) < 1.2 and self.radar_state.leadOne.dRel < ld['dRel'] < 80),
+            (ld for ld in center_list if ld['vLead'] > 5 and ld['radar'] and self.radar_state.leadOne.dRel < ld['dRel'] < 80),
             key=lambda d: d['dRel'],
             default=None
         )
