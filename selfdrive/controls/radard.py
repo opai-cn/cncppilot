@@ -522,7 +522,7 @@ class RadarD:
       elif y_rel_neg < 0: #left_lane_y:
         ld = c.get_RadarState(0, 0)
         if self.lane_line_available and c.in_lane_prob_future > 0.1 and c.cnt > int(2.0/DT_MDL):
-          if c.cut_in_count > int(0.2/DT_MDL):
+          if c.cut_in_count > int(0.1/DT_MDL):
             ld['modelProb'] = 0.03
             cutin_list.append(ld)
           c.cut_in_count += 2
@@ -530,7 +530,7 @@ class RadarD:
       else:
         ld = c.get_RadarState(0, 0)
         if self.lane_line_available and c.in_lane_prob_future > 0.1 and c.cnt > int(2.0/DT_MDL):
-          if c.cut_in_count > int(0.2/DT_MDL):
+          if c.cut_in_count > int(0.1/DT_MDL):
             ld['modelProb'] = 0.03
             cutin_list.append(ld)
           c.cut_in_count += 2
