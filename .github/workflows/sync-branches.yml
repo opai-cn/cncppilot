@@ -22,7 +22,7 @@ jobs:
         run: |
           git remote add upstream https://github.com/ajouatom/openpilot.git
           git fetch upstream carrot2-v9 --no-tags
-          git fetch upstream tr16-f --no-tags
+          git fetch upstream g-tr16 --no-tags
 
       # 3. Push carrot2-v9 branch to your repository
       - name: Push carrot2-v9 branch to your repository
@@ -33,5 +33,5 @@ jobs:
       # 4. Push fh-e branch to your repository
       - name: Push fh-e branch to your repository
         run: |
-          git checkout -B tr16-f upstream/tr16-f
-          git push origin tr16-f --force
+          git checkout -B g-tr16 upstream/g-tr16
+          git push origin g-tr16 --force
