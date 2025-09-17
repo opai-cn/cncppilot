@@ -373,7 +373,7 @@ class LongitudinalMpc:
     else:
       self.j_lead = 0.0
 
-    lead_xv_0, lead_v_0 = self.process_lead(radarstate.leadOne, np.clip(self.j_lead * carrot.j_lead_factor, -2.0, 2.0))
+    lead_xv_0, lead_v_0 = self.process_lead(radarstate.leadOne, np.clip(self.j_lead * carrot.j_lead_factor, -1.0, 1.0))
     lead_xv_1, _ = self.process_lead(radarstate.leadTwo, 0.0)
 
     mode = self.mode
