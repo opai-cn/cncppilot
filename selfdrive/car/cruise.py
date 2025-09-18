@@ -499,6 +499,9 @@ class VCruiseCarrot:
         elif self._v_cruise_kph_at_brake > 0 and v_cruise_kph < self._v_cruise_kph_at_brake:
           v_cruise_kph = self._v_cruise_kph_at_brake
           self._v_cruise_kph_at_brake = 0
+          road_limit_kph = self.nRoadLimitSpeed * self.autoSpeedUptoRoadSpeedLimit
+          if road_limit_kph > 1.0:
+            v_cruise_kph = min(v_cruise_kph, road_limit_kph)
         elif self._cruise_button_mode == 0:
           v_cruise_kph = button_kph
         else:
