@@ -127,7 +127,7 @@ def match_vision_to_track(v_ego: float, lead: capnp._DynamicStructReader, tracks
   offset_vision_dist = lead.x[0] - RADAR_TO_CAMERA
   #vel_tolerance = 25.0 if lead.prob > 0.99 else 10.0
   max_vision_dist = max(offset_vision_dist * 1.25, 5.0)
-  min_vision_dist = max(offset_vision_dist * 0.6, 1.0)
+  min_vision_dist = max(offset_vision_dist * 0.8, 1.0)
   max_vision_dist2 = max(offset_vision_dist * 1.45, 5.0)
   min_vision_dist2 = 1.5 #max(offset_vision_dist * 0.3, 1.0)
   max_offset_vision_vel = max(lead.v[0] * np.interp(lead.prob, [0.8, 0.98], [0.3, 0.5]), 5.0) # 확률이 낮으면 속도오차를 줄임.
@@ -135,12 +135,14 @@ def match_vision_to_track(v_ego: float, lead: capnp._DynamicStructReader, tracks
   def prob(c):
     prob_d = laplacian_pdf(c.dRel, offset_vision_dist, lead.xStd[0])
     prob_y = laplacian_pdf(c.yRel, -lead.y[0], lead.yStd[0])
+    prob_y2 = laplacian_pdf(c.yRel, -lead.y[0], lead.yStd[0] * 3)  # for cut-in
     prob_v = laplacian_pdf(c.vLead, lead.v[0], lead.vStd[0])
 
     #weight_v = np.interp(c.vLead, [0, 10], [0.3, 1])
-    c.score = prob_d * prob_y * prob_v # * weight_v
+    score = prob_d * prob_y * prob_v # * weight_v
+    score2 = prob_d * prob_y2 * prob_v # * weight_v
 
-    return c.score #prob_d * prob_y * prob_v * weight_v
+    return score, score2 #prob_d * prob_y * prob_v * weight_v
   
   def vel_sane(c):
     return (abs(c.vLead - lead.v[0]) < max_offset_vision_vel) or (c.vLead > 3)
@@ -154,19 +156,23 @@ def match_vision_to_track(v_ego: float, lead: capnp._DynamicStructReader, tracks
     return abs(c.yRel + lead.y[0]) < 2.0
  
 
-  first_track, second_track = None, None
-  first_score, second_score = -1e6, -1e6
+  first_track, second_track, extra_track = None, None, None
+  first_score, second_score, extra_score = -1e6, -1e6, -1e6
   for c in tracks.values():
-    c.score = prob(c)
+    c.score, score2 = prob(c)
     if c.score > first_score:
       second_score = first_score
       second_track = first_track
       first_score = c.score
       first_track = c
+    if score2 > extra_score:
+      extra_score = score2
+      extra_track = c
+      
 
   #best_track = max(tracks.values(), key=prob)
 
-  def select_track(track, score, track2, score2):
+  def select_track(track, score, track2, score2, extra_track, extra_score):
     if score < 0.0001:
       return None
     
@@ -191,13 +197,17 @@ def match_vision_to_track(v_ego: float, lead: capnp._DynamicStructReader, tracks
     #elif dist_sane(track) and vel_sane(track) and lead.prob > 0.5:
     #  best_track = track
     elif offset_vision_dist < 90 and lead.prob > 0.65:
-      if dist_sane(track, True) and vel_sane(track) and y_sane(track, True):# cut-in detect(vision)
+      # wide y detect, for cut-in
+      if extra_score > score and dist_sane(extra_track, True) and vel_sane(extra_track) and y_sane(extra_track, True):
+        best_track = extra_track
+      # wide dRel, y detect, for cut-in
+      elif dist_sane(track, True) and vel_sane(track) and y_sane(track, True):
         best_track = track
-      elif score2 > 0.00001 and dist_sane(track2, True) and vel_sane(track2) and y_sane(track2, True):
+      elif score2 > 0.0001 and dist_sane(track2, True) and vel_sane(track2) and y_sane(track2, True):
         best_track = track2
     return best_track
     
-  best_track = select_track(first_track, first_score, second_track, second_score)
+  best_track = select_track(first_track, first_score, second_track, second_score, extra_track, extra_score)
 
   for c in tracks.values():
     if c is best_track:
