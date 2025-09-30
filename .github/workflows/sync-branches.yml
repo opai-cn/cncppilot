@@ -20,7 +20,7 @@ jobs:
       # 2. Add upstream repositories and fetch branches
       - name: Add upstream repositories and fetch branches
         run: |
-          git remote add upstream https://github.com/ajouatom/openpilot.git
+          git remote add upstream https://github.com/jixiexiaoge/openpilot.git
           git fetch upstream carrot2-v9 --no-tags
           git fetch upstream g-tr16 --no-tags
 
